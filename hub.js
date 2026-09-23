@@ -3022,7 +3022,7 @@ function route() {
 }
 
 const AUTH_KEY = 'fusionLegalHub.auth';
-const AUTH_PASS = 'martin2026';
+const AUTH_PASS = 'martini2026';
 
 function isAuthed() {
   try {

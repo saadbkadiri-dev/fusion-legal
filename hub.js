@@ -1788,8 +1788,8 @@ function vContracts() {
       const isSentOrSigned = c.status === 'sent' || c.status === 'signed';
       return `<tr class="row${isSelected ? ' selected' : ''}" data-id="${c.id}">
         <td class="chk-col"><input type="checkbox" class="chk-contract" data-chk="${c.id}"${isChecked ? ' checked' : ''}></td>
-        <td><div class="ar who">${esc(tp.ar)}</div><div class="sub"><bdi dir="ltr">${esc(toArabicDigits(c.ref))}</bdi></div></td>
-        <td>
+        <td class="cell-title"><div class="ar who">${esc(tp.ar)}</div><div class="sub"><bdi dir="ltr">${esc(toArabicDigits(c.ref))}</bdi></div></td>
+        <td class="cell-party">
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span class="who">${esc(partyOf(c) || t('no.party'))}</span>
             <span class="role-badge ${roleInfo.cls}">${esc(roleInfo.label)}</span>
@@ -1798,18 +1798,18 @@ function vContracts() {
             ${roleOrTask && roleOrTask.toLowerCase() !== roleInfo.label.toLowerCase() ? `<span class="row-role">${esc(roleOrTask)}</span>` : ''}
           </div>
         </td>
-        <td>
+        <td class="cell-prj">
           <select class="prjsel" data-cprj="${c.id}" title="${t('c.th.project')}">
             <option value="">${t('ed.projectNone')}</option>
             ${(DB.projects || []).map(p => `<option value="${esc(p.id)}"${c.projectId === p.id || (!c.projectId && projectOf(c).toLowerCase() === p.name.toLowerCase()) ? ' selected' : ''}>${esc(p.name)}</option>`).join('')}
           </select>
         </td>
-        <td>${c.archived
+        <td class="cell-st">${c.archived
           ? `<span class="pill st-archived">${t('st.archived')}</span>`
           : `<select class="${stSelClass(c.status)}" data-st="${c.id}">${STATUS_KEYS.map(v => `<option value="${v}"${c.status === v ? ' selected' : ''}>${stName(v)}</option>`).join('')}</select>`
         }</td>
-        <td class="sub">${ago(c.updated)}</td>
-        <td>
+        <td class="sub cell-updated">${ago(c.updated)}</td>
+        <td class="cell-acts">
           <div class="acts">
             <button type="button" class="btn sm act-btn-edit" data-edit="${c.id}" title="${esc(t('pv.openEditor'))}"><span>${esc(t('c.edit'))}</span></button>
             <button type="button" class="btn sm act-btn-send" data-send="${c.id}" title="${esc(t('c.send'))}"><span>${esc(t('c.send'))}</span></button>
@@ -2220,17 +2220,17 @@ function vProjectWorkspace(pid) {
           const roleOrTask = val(c, 'role') || val(c, 'task') || val(c, 'purpose');
           const isSentOrSigned = c.status === 'sent' || c.status === 'signed';
           return `<tr class="row" data-id="${c.id}">
-            <td><div class="ar who">${esc(tp.ar)}</div><div class="sub"><bdi dir="ltr">${esc(toArabicDigits(c.ref))}</bdi></div></td>
-            <td>
+            <td class="cell-title"><div class="ar who">${esc(tp.ar)}</div><div class="sub"><bdi dir="ltr">${esc(toArabicDigits(c.ref))}</bdi></div></td>
+            <td class="cell-party">
               <div class="who">${esc(partyOf(c) || t('no.party'))}</div>
               <div class="sub">${roleOrTask ? `<span class="sub-role">${esc(roleOrTask)}</span>` : esc(projectOf(c))}</div>
             </td>
-            <td>${c.archived
+            <td class="cell-st">${c.archived
               ? `<span class="pill st-archived">${t('st.archived')}</span>`
               : `<select class="${stSelClass(c.status)}" data-st="${c.id}">${STATUS_KEYS.map(v => `<option value="${v}"${c.status === v ? ' selected' : ''}>${stName(v)}</option>`).join('')}</select>`
             }</td>
-            <td class="sub">${ago(c.updated)}</td>
-            <td>
+            <td class="sub cell-updated">${ago(c.updated)}</td>
+            <td class="cell-acts">
               <div class="acts">
                 <button type="button" class="btn sm act-btn-edit" data-edit="${c.id}" title="${esc(t('pv.openEditor'))}"><span>${esc(t('c.edit'))}</span></button>
                 <button type="button" class="btn sm act-btn-send" data-send="${c.id}" title="${esc(t('c.send'))}"><span>${esc(t('c.send'))}</span></button>

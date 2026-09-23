@@ -3040,10 +3040,31 @@ function showAuthGate() {
   const err = $('#authErr');
   const form = $('#authForm');
   if (err) err.style.display = 'none';
+  const toggleBtn = $('#authToggleShow');
   if (inp) {
+    inp.type = 'password';
     inp.value = '';
     inp.placeholder = t('auth.passPlaceholder');
     setTimeout(() => inp.focus(), 60);
+  }
+  if (toggleBtn) {
+    const eye = toggleBtn.querySelector('.eye-icon');
+    const eyeOff = toggleBtn.querySelector('.eye-off-icon');
+    if (eye && eyeOff) {
+      eye.style.display = 'block';
+      eyeOff.style.display = 'none';
+    }
+    toggleBtn.onclick = () => {
+      if (!inp) return;
+      const isPass = inp.type === 'password';
+      inp.type = isPass ? 'text' : 'password';
+      if (eye && eyeOff) {
+        eye.style.display = isPass ? 'none' : 'block';
+        eyeOff.style.display = isPass ? 'block' : 'none';
+      }
+      toggleBtn.title = isPass ? (LANG === 'ar' ? 'إخفاء كلمة المرور' : 'Hide password') : (LANG === 'ar' ? 'إظهار كلمة المرور' : 'Show password');
+      inp.focus();
+    };
   }
   form.onsubmit = e => {
     e.preventDefault();
@@ -3084,8 +3105,8 @@ $('#btnLang').onclick = () => {
   if (isAuthed()) route();
   else showAuthGate();
 };
-const btnLock = $('#btnLock');
-if (btnLock) btnLock.onclick = lockHub;
+const btnLogout = $('#btnLogout') || $('#btnLock');
+if (btnLogout) btnLogout.onclick = lockHub;
 $('#btnBackup').onclick = exportBackup;
 $('#fileRestore').onchange = e => { if (e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ''; };
 $('#btnRestore').onclick = () => $('#fileRestore').click();

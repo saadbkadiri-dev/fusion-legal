@@ -3020,16 +3020,83 @@ function route() {
     view.scrollTop = 0;
   }
 }
+
+const AUTH_KEY = 'fusionLegalHub.auth';
+const AUTH_PASS = 'martin2026';
+
+function isAuthed() {
+  try {
+    return sessionStorage.getItem(AUTH_KEY) === AUTH_PASS || localStorage.getItem(AUTH_KEY) === AUTH_PASS;
+  } catch (e) {
+    return false;
+  }
+}
+
+function showAuthGate() {
+  const gate = $('#authGate');
+  if (!gate) return;
+  gate.style.display = 'flex';
+  const inp = $('#authInput');
+  const err = $('#authErr');
+  const form = $('#authForm');
+  if (err) err.style.display = 'none';
+  if (inp) {
+    inp.value = '';
+    inp.placeholder = t('auth.passPlaceholder');
+    setTimeout(() => inp.focus(), 60);
+  }
+  form.onsubmit = e => {
+    e.preventDefault();
+    if (inp.value === AUTH_PASS) {
+      try {
+        sessionStorage.setItem(AUTH_KEY, AUTH_PASS);
+        localStorage.setItem(AUTH_KEY, AUTH_PASS);
+      } catch (err) {}
+      gate.style.display = 'none';
+      applyLang();
+      nav();
+      route();
+    } else {
+      if (err) {
+        err.style.display = 'block';
+        err.classList.remove('shake');
+        void err.offsetWidth;
+        err.classList.add('shake');
+      }
+      inp.select();
+    }
+  };
+}
+
+function lockHub() {
+  try {
+    sessionStorage.removeItem(AUTH_KEY);
+    localStorage.removeItem(AUTH_KEY);
+  } catch (e) {}
+  showAuthGate();
+}
+
 $('#btnLang').onclick = () => {
   save();
   LANG = LANG === 'ar' ? 'en' : 'ar';
   try { localStorage.setItem(LANG_KEY, LANG); } catch (e) { /* storage blocked */ }
-  applyLang(); route();
+  applyLang();
+  if (isAuthed()) route();
+  else showAuthGate();
 };
+const btnLock = $('#btnLock');
+if (btnLock) btnLock.onclick = lockHub;
 $('#btnBackup').onclick = exportBackup;
 $('#fileRestore').onchange = e => { if (e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ''; };
 $('#btnRestore').onclick = () => $('#fileRestore').click();
-window.addEventListener('hashchange', route);
+window.addEventListener('hashchange', () => { if (isAuthed()) route(); });
 document.addEventListener('keydown', e => { if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { const s = $('.search input'); if (s) { e.preventDefault(); s.focus(); } } });
-applyLang(); nav(); route();
+
+applyLang();
+if (!isAuthed()) {
+  showAuthGate();
+} else {
+  nav();
+  route();
+}
 })();

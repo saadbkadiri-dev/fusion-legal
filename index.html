@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>المركز القانوني | MARTINI FUSION FILMS</title>
+<link rel="icon" href="assets/logo-red.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="hub.css?v=20260923g">
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <a class="brand" href="#/templates"><img src="assets/logo-cream.svg" alt="MARTINI FUSION FILMS"><span class="brand-title" data-i18n="app.title"></span></a>
+    <nav>
+      <div class="nav-section-title" data-i18n="nav.master">الرئيسية</div>
+      <a href="#/templates" data-r="templates" class="nav-master"><span data-i18n="nav.templates"></span></a>
+      
+      <div class="nav-section-title" data-i18n="nav.subpages">الصفحات الفرعية</div>
+      <a href="#/projects" data-r="projects" class="nav-subpage"><span data-i18n="nav.projects"></span> <span class="n" id="nProjects">0</span></a>
+      <a href="#/contracts" data-r="contracts" class="nav-subpage"><span data-i18n="nav.contracts"></span> <span class="n" id="nContracts">0</span></a>
+
+      <div class="nav-section-divider"></div>
+      <a href="#/settings" data-r="settings"><span data-i18n="nav.settings"></span> <span class="dot" id="dotCompany" data-i18n-title="nav.dot"></span></a>
+    </nav>
+    <div class="side-foot">
+      <button id="btnLang" class="lang-btn" data-i18n="side.lang"></button>
+      <button id="btnBackup" data-i18n="side.backup"></button>
+      <button id="btnRestore" data-i18n="side.restore"></button>
+      <input type="file" id="fileRestore" accept="application/json" hidden>
+      <p data-i18n="side.note"></p>
+    </div>
+  </aside>
+  <main id="view"></main>
+</div>
+<div id="toast" role="status"></div>
+<div id="printHost" class="print-host"></div>
+<script src="data/i18n.js"></script>
+<script src="data/company.js"></script>
+<script src="data/templates/actor.js"></script>
+<script src="data/templates/artistic.js"></script>
+<script src="data/templates/nda.js"></script>
+<script src="data/seed.js"></script>
+<script src="assets/html2pdf.bundle.min.js"></script>
+<script src="hub.js?v=20260923g"></script>
+</body>
+</html>

@@ -8,11 +8,30 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="hub.css?v=20260923k">
+<link rel="stylesheet" href="hub.css?v=20260923m">
 </head>
 <body>
 <div class="app">
-  <aside class="side">
+  <div id="sideBackdrop" class="side-backdrop"></div>
+  <header class="mob-header">
+    <button type="button" id="btnMobMenu" class="mob-menu-btn" aria-label="Open menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+    </button>
+    <a class="mob-brand" href="#/templates">
+      <img src="assets/logo-red.svg" alt="MARTINI FUSION FILMS">
+      <span data-i18n="app.title">المركز القانوني</span>
+    </a>
+    <div class="mob-actions">
+      <button type="button" id="btnMobLang" class="mob-act-btn" data-i18n="side.lang">English</button>
+      <button type="button" id="btnMobLogout" class="mob-act-btn mob-logout-btn" title="Log out" aria-label="Log out">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+      </button>
+    </div>
+  </header>
+  <aside class="side" id="sideNav">
+    <div class="side-head-mob">
+      <button type="button" id="btnSideClose" class="side-close-btn" aria-label="Close menu">&times;</button>
+    </div>
     <a class="brand" href="#/templates"><img src="assets/logo-cream.svg" alt="MARTINI FUSION FILMS"><span class="brand-title" data-i18n="app.title"></span></a>
     <nav>
       <div class="nav-section-title" data-i18n="nav.master">الرئيسية</div>
@@ -69,6 +88,6 @@
 <script src="data/templates/nda.js"></script>
 <script src="data/seed.js"></script>
 <script src="assets/html2pdf.bundle.min.js"></script>
-<script src="hub.js?v=20260923k"></script>
+<script src="hub.js?v=20260923m"></script>
 </body>
 </html>

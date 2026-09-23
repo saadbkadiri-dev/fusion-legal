@@ -2990,7 +2990,7 @@ function route() {
       return;
     }
   }
-  try { localStorage.setItem('fusionLegalHub.lastRoute', location.hash); } catch (e) {}
+  closeMobileNav();
   const [a, b] = (location.hash.replace(/^#\/?/, '') || 'templates').split('/');
   if (a !== 'c') {
     window._lastNonEditorHash = location.hash || '#/contracts';
@@ -3096,6 +3096,33 @@ function lockHub() {
   } catch (e) {}
   showAuthGate();
 }
+
+const sideNav = $('#sideNav');
+const sideBackdrop = $('#sideBackdrop');
+const btnMobMenu = $('#btnMobMenu');
+const btnSideClose = $('#btnSideClose');
+const btnMobLang = $('#btnMobLang');
+const btnMobLogout = $('#btnMobLogout');
+
+function closeMobileNav() {
+  if (sideNav) sideNav.classList.remove('open');
+  if (sideBackdrop) sideBackdrop.classList.remove('open');
+}
+
+function openMobileNav() {
+  if (sideNav) sideNav.classList.add('open');
+  if (sideBackdrop) sideBackdrop.classList.add('open');
+}
+
+if (btnMobMenu) btnMobMenu.onclick = openMobileNav;
+if (btnSideClose) btnSideClose.onclick = closeMobileNav;
+if (sideBackdrop) sideBackdrop.onclick = closeMobileNav;
+if (btnMobLang) btnMobLang.onclick = () => $('#btnLang').click();
+if (btnMobLogout) btnMobLogout.onclick = lockHub;
+
+$$('#sideNav nav a').forEach(a => {
+  a.addEventListener('click', closeMobileNav);
+});
 
 $('#btnLang').onclick = () => {
   save();

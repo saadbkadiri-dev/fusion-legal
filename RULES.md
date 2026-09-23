@@ -66,3 +66,4 @@ This document establishes the binding architectural, operational, and legal inte
   - Features: Show/hide password eye toggle, autofocus, shake animation on invalid entry.
   - Session Persistence: Authenticated session stored in browser storage.
   - Logout Control: Dedicated `#btnLogout` button in the sidebar footer allows locking the hub on demand.
+

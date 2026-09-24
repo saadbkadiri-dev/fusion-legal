@@ -271,7 +271,11 @@ function newContract(tpl, projectId = null) {
     projectId: projectId || null, project: pName, notes: '', sig: true,
     date: today(), values, schedule: tpl.schedule ? tpl.schedule.map(r => ({ ...r })) : null };
 }
-const stSelClass = status => status === 'signed' ? 'stsel st-signed' : 'stsel';
+const stSelClass = status => {
+  if (status === 'signed') return 'stsel st-signed';
+  if (status === 'sent') return 'stsel st-sent';
+  return 'stsel st-draft';
+};
 const stClass = status => 'st-' + (status || 'draft');
 const val = (c, id) => {
   let v = c.values[id];
@@ -872,10 +876,18 @@ async function downloadPdfDirect(c) {
   if (!co().contactConfirmed) msg.push(t('pr.contact'));
   if (ch.missing.length) msg.push(t('pr.blank', { n: toArabicDigits(ch.missing.length) }));
   if (ch.schedOff) msg.push(t('pr.sched', { total: toArabicDigits(ch.total) }));
-  if (msg.length && !confirm(t('pdf.h') + '\n- ' + msg.join('\n- ') + '\n\n' + t('pdf.ask'))) return;
+
+  const isMobile = window.innerWidth < 900 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if (msg.length && !isMobile && !confirm(t('pdf.h') + '\n- ' + msg.join('\n- ') + '\n\n' + t('pdf.ask'))) return;
+
+  if (isMobile) {
+    toast(LANG === 'en' ? 'Opening PDF for print and download...' : 'جاري فتح نافذة الحفظ والطباعة بصيغة PDF...');
+    executePrint(c, 1);
+    return;
+  }
 
   if (!window.html2pdf) {
-    toast(LANG === 'en' ? 'PDF library not loaded. Please refresh the page.' : 'تعذر تحميل مكتبة PDF، يرجى تحديث الصفحة.');
+    executePrint(c, 1);
     return;
   }
 
@@ -918,9 +930,9 @@ async function downloadPdfDirect(c) {
     container.remove();
     toast(LANG === 'en' ? 'PDF downloaded successfully' : 'تم تحميل ملف PDF بنجاح');
   } catch (err) {
-    console.error('PDF export error:', err);
+    console.error('PDF export error, falling back to print pipeline:', err);
     container.remove();
-    toast(LANG === 'en' ? 'Failed to export PDF' : 'فشل تصدير PDF');
+    executePrint(c, 1);
   }
 }
 
@@ -1085,8 +1097,6 @@ function openMobilePreviewModal(c) {
   if (typeof c === 'string') c = DB.contracts.find(x => x.id === c);
   if (!c) return;
   const tp = tplById(c.tpl);
-  let curPage = 0;
-  const { pageEls, N } = buildExportPageEls(tp, c);
 
   const existing = document.getElementById('mobPreviewModal');
   if (existing) existing.remove();
@@ -1095,59 +1105,145 @@ function openMobilePreviewModal(c) {
   modal.className = 'modal-overlay mob-pv-overlay';
   modal.id = 'mobPreviewModal';
 
-  const updateCard = () => {
-    const pInfo = `${t('pv.pageIndicator') || 'صفحة'} ${toArabicDigits(curPage + 1)} ${t('pv.pageOf') || 'من'} ${toArabicDigits(N)}`;
-    const pageText = $('#mobPvPageInfo', modal);
-    if (pageText) pageText.textContent = pInfo;
-    const btnPrev = $('#mobPvPrev', modal);
-    if (btnPrev) btnPrev.disabled = curPage === 0;
-    const btnNext = $('#mobPvNext', modal);
-    if (btnNext) btnNext.disabled = curPage >= N - 1;
-
-    const paper = $('#mobPvPaper', modal);
-    if (!paper) return;
-    paper.innerHTML = '';
-    const clone = pageEls[curPage].cloneNode(true);
-    clone.style.display = 'block';
-    clone.style.position = 'relative';
-    clone.style.margin = '0 auto';
-    paper.appendChild(clone);
-
-    const bodyEl = $('#mobPvBody', modal);
-    const bodyWidth = bodyEl ? bodyEl.clientWidth : (window.innerWidth - 24);
-    const targetW = Math.max(260, bodyWidth - 12);
-    const scale = Math.min(1, targetW / 794);
-    paper.style.transform = `scale(${scale})`;
-    paper.style.transformOrigin = 'top center';
-    const canvasWrap = $('#mobPvCanvasWrap', modal);
-    if (canvasWrap) canvasWrap.style.height = `${scale * 1123 + 24}px`;
-  };
+  const p2 = partyOf(c) || t('no.party');
+  const roleInfo = roleBadge(c);
+  const prj = c.project ? c.project.trim() : '';
+  const roleOrTask = (val(c, 'role') || val(c, 'task') || '').trim();
+  const fee = val(c, 'fee') || val(c, 'salary') || '';
+  const dateFormatted = c.date || (c.created ? new Date(c.created).toLocaleDateString(LANG === 'ar' ? 'ar-SY' : 'en-US') : '');
+  const sched = c.schedule || [];
+  const ch = checks(c);
 
   modal.innerHTML = `
-    <div class="mob-pv-card">
+    <div class="mob-pv-card mob-summary-modal-card">
       <div class="mob-pv-header">
         <div class="mob-pv-title-wrap">
-          <span class="mob-pv-title">${esc(tp.ar)} &bull; ${esc(partyOf(c) || t('no.party'))}</span>
+          <span class="mob-pv-title">${t('pv.previewTitle') || 'بطاقة ملخص العقد'}</span>
           <span class="mob-pv-ref"><bdi dir="ltr">${esc(toArabicDigits(c.ref))}</bdi></span>
         </div>
         <button type="button" class="mob-pv-close" id="mobPvClose" aria-label="Close">&times;</button>
       </div>
-      <div class="mob-pv-pager-bar">
-        <button type="button" class="mob-pv-page-btn" id="mobPvPrev" aria-label="Previous">&rsaquo;</button>
-        <div class="mob-pv-page-info" id="mobPvPageInfo"></div>
-        <button type="button" class="mob-pv-page-btn" id="mobPvNext" aria-label="Next">&lsaquo;</button>
-      </div>
-      <div class="mob-pv-body" id="mobPvBody">
-        <div class="mob-pv-canvas-wrap" id="mobPvCanvasWrap">
-          <div class="mob-pv-paper" id="mobPvPaper"></div>
+
+      <div class="mob-summary-body">
+        <div class="cp-sum-hero">
+          <div class="cp-sum-hero-top">
+            <div>
+              <div class="cp-sum-party-title" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                <span style="font-size:16px;font-weight:700;">${esc(p2)}</span>
+                <span class="role-badge ${roleInfo.cls}" style="font-size:11px;padding:2px 8px;">${esc(roleInfo.label)}</span>
+              </div>
+              <div class="cp-sum-badges" style="margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                <span class="cp-sum-pill ref">${esc(toArabicDigits(c.ref))}</span>
+                <span class="cp-sum-pill ref">${esc(LANG === 'en' ? tp.en : tp.ar)}</span>
+                ${prj ? `<span class="cp-sum-pill project">${esc(prj)}</span>` : ''}
+                ${roleOrTask && roleOrTask.toLowerCase() !== roleInfo.label.toLowerCase() ? `<span class="cp-sum-pill role">${esc(roleOrTask)}</span>` : ''}
+                <span class="st ${stSelClass(c.status)}"><i></i>${stName(c.status)}</span>
+              </div>
+            </div>
+          </div>
         </div>
+
+        <div class="cp-sum-card">
+          <div class="cp-sum-head-section">
+            <span>${t('sum.scope')}</span>
+            <span style="font-size:11px;color:var(--muted);">${dateFormatted ? (LANG === 'en' ? 'Date: ' : 'تاريخ: ') + toArabicDigits(dateFormatted) : ''}</span>
+          </div>
+          <div class="cp-sum-grid">
+            ${prj ? `
+            <div class="cp-sum-field">
+              <span class="cp-sum-lbl">${t('sum.project')}</span>
+              <span class="cp-sum-val">${esc(prj)}</span>
+            </div>` : ''}
+            ${roleOrTask ? `
+            <div class="cp-sum-field">
+              <span class="cp-sum-lbl">${t('sum.role')}</span>
+              <span class="cp-sum-val">${esc(roleInfo.label)}${roleOrTask && roleOrTask.toLowerCase() !== roleInfo.label.toLowerCase() ? ' - ' + esc(roleOrTask) : ''}</span>
+            </div>` : ''}
+            ${val(c, 'episodes') ? `
+            <div class="cp-sum-field">
+              <span class="cp-sum-lbl">${t('sum.episodes')}</span>
+              <span class="cp-sum-val">${esc(toArabicDigits(val(c, 'episodes')))} ${LANG === 'en' ? 'Episodes' : 'حلقات'}</span>
+            </div>` : ''}
+            ${val(c, 'director') ? `
+            <div class="cp-sum-field">
+              <span class="cp-sum-lbl">${t('sum.director')}</span>
+              <span class="cp-sum-val">${esc(val(c, 'director'))}</span>
+            </div>` : ''}
+            ${val(c, 'term') ? `
+            <div class="cp-sum-field">
+              <span class="cp-sum-lbl">${t('sum.term')}</span>
+              <span class="cp-sum-val">${esc(val(c, 'term'))}</span>
+            </div>` : ''}
+            ${val(c, 'p2domicile') ? `
+            <div class="cp-sum-field">
+              <span class="cp-sum-lbl">${t('sum.domicile')}</span>
+              <span class="cp-sum-val">${esc(val(c, 'p2domicile'))}</span>
+            </div>` : ''}
+          </div>
+        </div>
+
+        ${fee || (sched && sched.length) ? `
+        <div class="cp-sum-card">
+          <div class="cp-sum-head-section">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span>${t('sum.fee')}</span>
+              ${fee ? `<b class="fee-highlight" style="font-size:13px;color:#166534;">(${esc(toArabicDigits(fee))})</b>` : ''}
+            </div>
+            ${val(c, 'royalty') ? `<span class="cp-sum-pill role" style="font-size:10px;padding:1px 6px;">${t('sum.royalty')}: ${esc(toArabicDigits(val(c, 'royalty')))}%</span>` : ''}
+          </div>
+          ${sched && sched.length ? `
+          <div class="cp-sum-sched-list">
+            ${sched.map(s => `
+              <div class="cp-sum-sched-item">
+                <span class="cp-sum-sched-pct">${toArabicDigits(s.pct)}%</span>
+                <span class="cp-sum-sched-text">${esc(toArabicDigits(s.text))}</span>
+              </div>
+            `).join('')}
+          </div>` : ''}
+        </div>` : ''}
+
+        <div class="cp-sum-card" style="padding:8px 12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <span style="font:700 12px 'Cairo',var(--head);color:var(--ink2)">${t('sum.readiness')}</span>
+            ${ch.missing.length === 0 && !ch.schedOff ? `
+              <span class="cp-sum-readiness ok" style="padding:2px 8px;font-size:11px;margin:0;">
+                <i>✓</i> <span>${t('sum.readyOk', { n: toArabicDigits(tp.articles || 3), words: LANG === 'ar' ? 'مواد' : 'articles' })}</span>
+              </span>
+            ` : `
+              <span class="cp-sum-readiness warn" style="padding:2px 8px;font-size:11px;margin:0;">
+                <span>${ch.missing.length ? t('sum.readyMissing', { n: toArabicDigits(ch.missing.length) }) : t('sum.readySchedBad', { total: toArabicDigits(ch.total) })}</span>
+              </span>
+            `}
+          </div>
+          ${ch.missing.length > 0 ? `
+            <div class="cp-sum-missing-chips" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);">
+              ${ch.missing.map(f => `
+                <span class="cp-sum-missing-chip" data-fid="${esc(f.id)}" style="display:inline-flex;align-items:center;gap:3px;background:rgba(217,119,6,.08);color:#b45309;border:1px solid rgba(217,119,6,.22);border-radius:4px;padding:2px 6px;font-size:11px;font-weight:600;">
+                  <span style="color:#d97706">&bull;</span> ${esc(fieldLabels(f)[0].replace(/ \(.*\)/, ''))}
+                </span>
+              `).join('')}
+            </div>
+          ` : ''}
+        </div>
+
+        ${c.notes ? `
+        <div class="cp-sum-card" style="padding:8px 12px;">
+          <div class="cp-sum-head-section" style="margin-bottom:4px;padding-bottom:3px;">
+            <span style="font-size:11px;">${t('sum.notesTitle')}</span>
+          </div>
+          <div class="cp-sum-memo" style="font-size:12px;padding:6px 10px;margin-top:2px;">${esc(c.notes)}</div>
+        </div>` : ''}
       </div>
+
       <div class="mob-pv-footer">
         <button type="button" class="btn sm act-btn-print" id="mobPvBtnPrint">
           <span>${esc(t('c.print') || 'طباعة')}</span>
         </button>
         <button type="button" class="btn sm act-btn-pdf" id="mobPvBtnPdf">
           <span>${esc(t('ed.exportPdf') || 'حفظ كملف PDF')}</span>
+        </button>
+        <button type="button" class="btn sm act-btn-send" id="mobPvBtnSend">
+          <span>${esc(t('c.send') || 'إرسال')}</span>
         </button>
         <button type="button" class="btn sm act-btn-edit" id="mobPvBtnEdit">
           <span>${esc(t('c.edit') || 'تعديل')}</span>
@@ -1157,38 +1253,9 @@ function openMobilePreviewModal(c) {
   `;
 
   document.body.appendChild(modal);
-  updateCard();
 
   $('#mobPvClose', modal).onclick = () => modal.remove();
   modal.onclick = e => { if (e.target === modal) modal.remove(); };
-
-  $('#mobPvPrev', modal).onclick = () => {
-    if (curPage > 0) { curPage--; updateCard(); }
-  };
-  $('#mobPvNext', modal).onclick = () => {
-    if (curPage < N - 1) { curPage++; updateCard(); }
-  };
-
-  let startX = 0, startY = 0;
-  const bodyEl = $('#mobPvBody', modal);
-  if (bodyEl) {
-    bodyEl.addEventListener('touchstart', e => {
-      if (e.touches.length === 1) {
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-      }
-    }, { passive: true });
-    bodyEl.addEventListener('touchend', e => {
-      if (e.changedTouches.length === 1) {
-        const dx = e.changedTouches[0].clientX - startX;
-        const dy = e.changedTouches[0].clientY - startY;
-        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
-          if (dx < 0 && curPage < N - 1) { curPage++; updateCard(); }
-          else if (dx > 0 && curPage > 0) { curPage--; updateCard(); }
-        }
-      }
-    }, { passive: true });
-  }
 
   $('#mobPvBtnPrint', modal).onclick = () => {
     modal.remove();
@@ -1196,6 +1263,10 @@ function openMobilePreviewModal(c) {
   };
   $('#mobPvBtnPdf', modal).onclick = () => {
     downloadPdfDirect(c);
+  };
+  $('#mobPvBtnSend', modal).onclick = () => {
+    modal.remove();
+    openSendModal(c, () => paintTable());
   };
   $('#mobPvBtnEdit', modal).onclick = () => {
     modal.remove();
@@ -1530,19 +1601,6 @@ function vContracts() {
         <div id="clist"></div>
         <div id="cPagination"></div>
       </div>
-      <aside class="contract-preview-pane" id="contractPreviewPane" aria-label="${esc(t('pv.previewTitle'))}">
-        <div class="cp-header">
-          <div class="cp-title-wrap">
-            <span class="cp-tpl-name" id="cpTplName"></span>
-            <span class="cp-ref" id="cpRef"></span>
-            <span id="cpRoleBadge"></span>
-            <span class="cp-party" id="cpParty"></span>
-          </div>
-        </div>
-        <div class="cp-body" id="cpBody">
-          <div class="cp-summary-wrap" id="cpSummary"></div>
-        </div>
-      </aside>
     </div>
   </div>`;
 
@@ -2194,9 +2252,8 @@ function vContracts() {
       const cid = row.dataset.id;
       if (window.innerWidth >= 900) {
         F.activeContractId = cid;
-        $$('tr.row', $('#clist')).forEach(r => r.classList.toggle('selected', r.dataset.id === cid));
-        const activeContract = DB.contracts.find(x => x.id === cid);
-        renderContractPreview(activeContract);
+        window._lastNonEditorHash = '#/contracts';
+        location.hash = '#/c/' + cid;
       } else {
         openMobilePreviewModal(cid);
       }

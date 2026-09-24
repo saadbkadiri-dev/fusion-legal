@@ -2121,6 +2121,175 @@ tr.row.flash-highlight {
   display: none !important;
 }
 
+/* Universal Preview and Contract Summary Modal */
+.mob-pv-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(15, 15, 18, 0.72) !important;
+  backdrop-filter: blur(4px) !important;
+  z-index: 10000 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px 16px !important;
+  box-sizing: border-box !important;
+}
+.mob-pv-card {
+  background: #f4f1ea !important;
+  width: 100% !important;
+  max-width: 680px !important;
+  max-height: 88vh !important;
+  border-radius: 14px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.35) !important;
+  border: 1px solid var(--line2) !important;
+}
+.mob-pv-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 12px 18px !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid var(--line) !important;
+  flex-shrink: 0 !important;
+}
+.mob-pv-title-wrap {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  min-width: 0 !important;
+}
+.mob-pv-title {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: var(--ink) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+.mob-pv-ref {
+  font-size: 11px !important;
+  color: var(--muted) !important;
+  font-family: var(--mono, monospace) !important;
+}
+.mob-pv-close {
+  background: #f1ede5 !important;
+  border: none !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 8px !important;
+  font-size: 20px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  color: var(--ink) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.mob-pv-close:hover {
+  background: #e2ddd2 !important;
+}
+.mob-pv-pager-bar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  padding: 6px 14px !important;
+  background: #faf8f4 !important;
+  border-bottom: 1px solid var(--line2) !important;
+  flex-shrink: 0 !important;
+}
+.mob-pv-page-btn {
+  background: #fff !important;
+  border: 1px solid var(--line2) !important;
+  border-radius: 6px !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 18px !important;
+  cursor: pointer !important;
+}
+.mob-pv-page-btn:disabled {
+  opacity: .35 !important;
+  cursor: not-allowed !important;
+}
+.mob-pv-page-info {
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  color: var(--ink) !important;
+  padding: 3px 12px !important;
+  background: #fff !important;
+  border: 1px solid var(--line2) !important;
+  border-radius: 20px !important;
+}
+.mob-pv-body {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+.mob-pv-canvas-wrap {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+.mob-pv-paper {
+  transform-origin: top center !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+}
+.mob-pv-footer {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 8px !important;
+  padding: 12px 18px !important;
+  background: #ffffff !important;
+  border-top: 1px solid var(--line) !important;
+  flex-shrink: 0 !important;
+}
+.mob-pv-footer .btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 9px 4px !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  min-height: 40px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+.mob-summary-body {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 16px 18px 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+.mob-summary-body .cp-sum-hero,
+.mob-summary-body .cp-sum-card {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+}
+.mob-summary-modal-card {
+  max-height: 88vh !important;
+}
+
 /* ---------- Mobile Responsive Architecture (<= 860px) ---------- */
 @media (max-width: 860px) {
   .mob-header {
@@ -2628,172 +2797,34 @@ tr.row.flash-highlight {
   }
 
   /* Mobile Document Preview Modal */
+  /* Mobile Document Preview Modal overrides */
   .mob-pv-overlay {
-    position: fixed !important;
-    inset: 0 !important;
-    background: rgba(15, 15, 18, 0.78) !important;
-    backdrop-filter: blur(4px) !important;
-    z-index: 10000 !important;
-    display: flex !important;
-    flex-direction: column !important;
     justify-content: flex-end !important;
     padding: 0 !important;
   }
   .mob-pv-card {
-    background: #f4f1ea !important;
-    width: 100% !important;
+    max-width: 100% !important;
     height: 94vh !important;
     height: 94dvh !important;
     border-radius: 16px 16px 0 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
     box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.25) !important;
     animation: slideUpMob .24s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  }
-  @keyframes slideUpMob {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
-  }
-  .mob-pv-header {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    padding: 12px 16px !important;
-    background: #ffffff !important;
-    border-bottom: 1px solid var(--line) !important;
-    flex-shrink: 0 !important;
-  }
-  .mob-pv-title-wrap {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 2px !important;
-    min-width: 0 !important;
-  }
-  .mob-pv-title {
-    font-size: 14px !important;
-    font-weight: 700 !important;
-    color: var(--ink) !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
-  .mob-pv-ref {
-    font-size: 11px !important;
-    color: var(--muted) !important;
-    font-family: var(--mono, monospace) !important;
-  }
-  .mob-pv-close {
-    background: #f1ede5 !important;
-    border: none !important;
-    width: 32px !important;
-    height: 32px !important;
-    border-radius: 8px !important;
-    font-size: 20px !important;
-    line-height: 1 !important;
-    cursor: pointer !important;
-    color: var(--ink) !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
-  .mob-pv-pager-bar {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 12px !important;
-    padding: 6px 14px !important;
-    background: #faf8f4 !important;
-    border-bottom: 1px solid var(--line2) !important;
-    flex-shrink: 0 !important;
-  }
-  .mob-pv-page-btn {
-    background: #fff !important;
-    border: 1px solid var(--line2) !important;
-    border-radius: 6px !important;
-    width: 32px !important;
-    height: 32px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-size: 18px !important;
-    cursor: pointer !important;
-  }
-  .mob-pv-page-btn:disabled {
-    opacity: .35 !important;
-    cursor: not-allowed !important;
-  }
-  .mob-pv-page-info {
-    font-size: 12.5px !important;
-    font-weight: 700 !important;
-    color: var(--ink) !important;
-    padding: 3px 12px !important;
-    background: #fff !important;
-    border: 1px solid var(--line2) !important;
-    border-radius: 20px !important;
-  }
-  .mob-pv-body {
-    flex: 1 !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    padding: 12px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    -webkit-overflow-scrolling: touch !important;
-  }
-  .mob-pv-canvas-wrap {
-    width: 100% !important;
-    display: flex !important;
-    justify-content: center !important;
-    overflow: hidden !important;
-  }
-  .mob-pv-paper {
-    transform-origin: top center !important;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
-  }
-  .mob-pv-footer {
-    display: grid !important;
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: 6px !important;
-    padding: 10px 12px !important;
-    background: #ffffff !important;
-    border-top: 1px solid var(--line) !important;
-    flex-shrink: 0 !important;
-  }
-  .mob-summary-body {
-    flex: 1 !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    padding: 14px 12px 24px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 10px !important;
-    -webkit-overflow-scrolling: touch !important;
-  }
-  .mob-summary-body .cp-sum-hero,
-  .mob-summary-body .cp-sum-card {
-    background: #ffffff;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 12px 14px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.03);
   }
   .mob-summary-modal-card {
     max-height: 90vh !important;
     max-height: 90dvh !important;
   }
-  .mob-pv-footer .btn {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 9px 4px !important;
-    font-size: 12.5px !important;
-    font-weight: 700 !important;
-    border-radius: 8px !important;
-    min-height: 40px !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
+  .mob-summary-body {
+    padding: 14px 12px 24px !important;
+    gap: 10px !important;
+  }
+  .mob-summary-body .cp-sum-hero,
+  .mob-summary-body .cp-sum-card {
+    padding: 12px 14px !important;
+  }
+  .mob-pv-footer {
+    gap: 6px !important;
+    padding: 10px 12px !important;
   }
   
   /* Bulk Action Bar on mobile */

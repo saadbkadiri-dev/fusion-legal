@@ -347,6 +347,96 @@ const getRoleInfo = (c) => {
   return { key: 'crew', label: LANG === 'en' ? 'Crew' : 'فني', icon: '', cls: 'crew' };
 };
 
+const normSearchStr = (s) => {
+  if (!s) return '';
+  return String(s)
+    .toLowerCase()
+    .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+    .replace(/[\u064B-\u065F\u0670]/g, '')
+    .replace(/ـ+/g, '')
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/[ىي]/g, 'ي')
+    .replace(/[ةه]/g, 'ه')
+    .replace(/[ؤئء]/g, 'ء')
+    .replace(/[^\w\d\u0621-\u064A\s]/g, ' ')
+    .trim();
+};
+
+const ROLE_SYNONYMS = {
+  dop: ['dop', 'd.o.p', 'cinematographer', 'camera', 'cameraman', 'تصوير', 'مدير تصوير', 'كاميرا', 'سينماتوغراف', 'مصور'],
+  actor: ['actor', 'acting', 'ممثل', 'تمثيل', 'بطولة', 'دور', 'كاست'],
+  actress: ['actress', 'acting', 'ممثلة', 'تمثيل', 'بطولة', 'دور', 'كاست'],
+  director: ['director', 'directing', 'مخرج', 'إخراج', 'اخراج'],
+  sound: ['sound', 'audio', 'mixer', 'صوت', 'مهندس صوت', 'مكساج', 'فني صوت'],
+  editor: ['editor', 'editing', 'montage', 'colorist', 'مونتاج', 'مونتير', 'تلوين', 'مصحح الوان', 'مصحح ألوان'],
+  gaffer: ['gaffer', 'lighting', 'light', 'إضاءة', 'اضاءة', 'فني اضاءة', 'فني إضاءة', 'كهرباء'],
+  art_dir: ['art', 'art director', 'scenography', 'ديكور', 'مهندس ديكور', 'سينوغرافيا', 'اكسسوار'],
+  writer: ['writer', 'script', 'scenario', 'screenplay', 'كاتب', 'سيناريست', 'مؤلف', 'تأليف', 'سيناريو'],
+  makeup: ['makeup', 'make-up', 'مكياج', 'ماكياج', 'كوافير'],
+  costume: ['costume', 'stylist', 'wardrobe', 'ازياء', 'أزياء', 'ملابس', 'ستايلست'],
+  vfx: ['vfx', 'visual effects', 'مؤثرات', 'غرافيك', 'خدع', 'مؤثرات بصرية'],
+  music: ['music', 'composer', 'soundtrack', 'موسيقى', 'الحان', 'ألحان', 'تأليف موسيقي'],
+  crew: ['crew', 'technician', 'tech', 'فني', 'فنيين', 'طاقم عمل', 'تقني'],
+  nda: ['nda', 'confidential', 'secret', 'سرية', 'عدم افصاح', 'عدم إفصاح', 'كتمان']
+};
+
+const matchSmartSearch = (c, query) => {
+  if (!query || !query.trim()) return true;
+  const qNorm = normSearchStr(query);
+  const tokens = qNorm.split(/\s+/).filter(Boolean);
+  if (!tokens.length) return true;
+
+  const tp = tplById(c.tpl) || {};
+  const roleInfo = getRoleInfo(c);
+  const p2 = partyOf(c) || '';
+  const prj = projectOf(c) || c.project || '';
+  const refNum = c.ref || '';
+  const refDigits = String(refNum).replace(/\D+/g, '');
+  const roleVal = val(c, 'role');
+  const taskVal = val(c, 'task');
+  const purposeVal = val(c, 'purpose');
+  const notesVal = c.notes || '';
+  const stVal = c.status || '';
+  const stAr = stName(c.status) || '';
+
+  const roleSyns = [];
+  if (roleInfo?.key && ROLE_SYNONYMS[roleInfo.key]) {
+    roleSyns.push(...ROLE_SYNONYMS[roleInfo.key]);
+  }
+  if (c.tpl === 'actor') {
+    roleSyns.push(...ROLE_SYNONYMS.actor, ...ROLE_SYNONYMS.actress);
+  }
+  if (c.tpl === 'artistic') {
+    roleSyns.push(...ROLE_SYNONYMS.crew);
+  }
+  if (c.tpl === 'nda') {
+    roleSyns.push(...ROLE_SYNONYMS.nda);
+  }
+
+  const indexRaw = [
+    refNum,
+    refDigits,
+    p2,
+    prj,
+    tp.ar || '',
+    tp.en || '',
+    tp.id || '',
+    stVal,
+    stAr,
+    roleInfo?.label || '',
+    roleVal,
+    taskVal,
+    purposeVal,
+    notesVal,
+    ...roleSyns
+  ].join(' ');
+
+  const indexNorm = normSearchStr(indexRaw);
+
+  return tokens.every(tok => indexNorm.includes(tok));
+};
+
+
 function checks(c) {
   const tpl = tplById(c.tpl);
   const missing = tpl.fields.filter(f => f.req !== false && !val(c, f.id));
@@ -1942,18 +2032,14 @@ function vContracts() {
   const paintTable = () => {
     renderStatusChips();
     renderBulkBar();
-    const q = F.q.trim().toLowerCase();
     const list = DB.contracts.filter(c => {
-      const tp = tplById(c.tpl);
       if (F.status === 'archived') {
         if (!c.archived) return false;
       } else {
         if (c.archived) return false;
         if (F.status !== 'all' && c.status !== F.status) return false;
       }
-      if (!q) return true;
-      const hay = [c.ref, partyOf(c), projectOf(c), tp.ar, tp.en, c.notes, val(c, 'role'), val(c, 'task'), val(c, 'purpose')].join(' ').toLowerCase();
-      return hay.includes(q);
+      return matchSmartSearch(c, F.q);
     });
     list.sort((a, b) => b.updated - a.updated);
 
@@ -2249,14 +2335,7 @@ function vContracts() {
     if (e.target.closest('select') || e.target.closest('a')) return;
     const row = e.target.closest('[data-id]');
     if (row) {
-      const cid = row.dataset.id;
-      if (window.innerWidth >= 900) {
-        F.activeContractId = cid;
-        window._lastNonEditorHash = '#/contracts';
-        location.hash = '#/c/' + cid;
-      } else {
-        openMobilePreviewModal(cid);
-      }
+      openMobilePreviewModal(row.dataset.id);
     }
   };
 
@@ -2264,9 +2343,7 @@ function vContracts() {
     if (e.target.closest('input') || e.target.closest('select') || e.target.closest('button') || e.target.closest('a')) return;
     const row = e.target.closest('[data-id]');
     if (row) {
-      F.activeContractId = row.dataset.id;
-      window._lastNonEditorHash = '#/contracts';
-      location.hash = '#/c/' + row.dataset.id;
+      openMobilePreviewModal(row.dataset.id);
     }
   };
 
@@ -2498,8 +2575,7 @@ function vProjectWorkspace(pid) {
       if (e.target.closest('select') || e.target.closest('a')) return;
       const row = e.target.closest('[data-id]');
       if (row) {
-        if (window.innerWidth < 900) openMobilePreviewModal(row.dataset.id);
-        else location.hash = '#/c/' + row.dataset.id;
+        openMobilePreviewModal(row.dataset.id);
       }
     };
 

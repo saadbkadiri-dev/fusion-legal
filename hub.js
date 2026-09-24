@@ -1106,7 +1106,7 @@ function openMobilePreviewModal(c) {
   modal.id = 'mobPreviewModal';
 
   const p2 = partyOf(c) || t('no.party');
-  const roleInfo = roleBadge(c);
+  const roleInfo = getRoleInfo(c);
   const prj = c.project ? c.project.trim() : '';
   const roleOrTask = (val(c, 'role') || val(c, 'task') || '').trim();
   const fee = val(c, 'fee') || val(c, 'salary') || '';

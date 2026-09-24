@@ -797,17 +797,29 @@ function buildExportPageEls(tpl, c) {
   // it out for us; nothing here is estimated.
   const bottomsMm = children.map(el => (el.getBoundingClientRect().bottom - docTopPx) * mmPerPx);
 
-  // Safety margin below the .win's real 238mm box: html2canvas cannot
-  // capture an overflow:hidden position:absolute element at all (it comes
-  // out blank, confirmed empirically), so .win is rendered without clipping
-  // below. Packing to a slightly shorter budget keeps a real margin of error
-  // against the actual footer position instead of relying on a hard clip.
-  const MAX_H = 225;
+  // Content height budget for the 238mm .win container (footer starts at 280mm, leaving 8mm gap)
+  const MAX_H = 237;
   const bins = [];
   let cur = [], pageStartMm = 0;
   children.forEach((el, i) => {
-    const relBottom = bottomsMm[i] - pageStartMm;
-    if (cur.length && relBottom > MAX_H) { bins.push(cur); cur = []; pageStartMm = bottomsMm[i - 1]; }
+    let relBottom = bottomsMm[i] - pageStartMm;
+    const isHeading = el.classList.contains('art') || el.classList.contains('ch');
+    const nextIsLi = i + 1 < children.length && children[i + 1].classList.contains('li');
+
+    if (cur.length && relBottom > MAX_H) {
+      bins.push(cur);
+      cur = [];
+      pageStartMm = bottomsMm[i - 1];
+      relBottom = bottomsMm[i] - pageStartMm;
+    } else if (cur.length && isHeading && nextIsLi) {
+      // Look-ahead: if article heading fits but its first list item would overflow, move heading with its item
+      const nextRelBottom = bottomsMm[i + 1] - pageStartMm;
+      if (nextRelBottom > MAX_H) {
+        bins.push(cur);
+        cur = [];
+        pageStartMm = bottomsMm[i - 1];
+      }
+    }
     cur.push(i);
   });
   if (cur.length) bins.push(cur);
@@ -1068,6 +1080,129 @@ function printContractDirect(c) {
 function exportPdfDirect(c) {
   downloadPdfDirect(c);
 }
+
+function openMobilePreviewModal(c) {
+  if (typeof c === 'string') c = DB.contracts.find(x => x.id === c);
+  if (!c) return;
+  const tp = tplById(c.tpl);
+  let curPage = 0;
+  const { pageEls, N } = buildExportPageEls(tp, c);
+
+  const existing = document.getElementById('mobPreviewModal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay mob-pv-overlay';
+  modal.id = 'mobPreviewModal';
+
+  const updateCard = () => {
+    const pInfo = `${t('pv.pageIndicator') || 'صفحة'} ${toArabicDigits(curPage + 1)} ${t('pv.pageOf') || 'من'} ${toArabicDigits(N)}`;
+    const pageText = $('#mobPvPageInfo', modal);
+    if (pageText) pageText.textContent = pInfo;
+    const btnPrev = $('#mobPvPrev', modal);
+    if (btnPrev) btnPrev.disabled = curPage === 0;
+    const btnNext = $('#mobPvNext', modal);
+    if (btnNext) btnNext.disabled = curPage >= N - 1;
+
+    const paper = $('#mobPvPaper', modal);
+    if (!paper) return;
+    paper.innerHTML = '';
+    const clone = pageEls[curPage].cloneNode(true);
+    clone.style.display = 'block';
+    clone.style.position = 'relative';
+    clone.style.margin = '0 auto';
+    paper.appendChild(clone);
+
+    const bodyEl = $('#mobPvBody', modal);
+    const bodyWidth = bodyEl ? bodyEl.clientWidth : (window.innerWidth - 24);
+    const targetW = Math.max(260, bodyWidth - 12);
+    const scale = Math.min(1, targetW / 794);
+    paper.style.transform = `scale(${scale})`;
+    paper.style.transformOrigin = 'top center';
+    const canvasWrap = $('#mobPvCanvasWrap', modal);
+    if (canvasWrap) canvasWrap.style.height = `${scale * 1123 + 24}px`;
+  };
+
+  modal.innerHTML = `
+    <div class="mob-pv-card">
+      <div class="mob-pv-header">
+        <div class="mob-pv-title-wrap">
+          <span class="mob-pv-title">${esc(tp.ar)} &bull; ${esc(partyOf(c) || t('no.party'))}</span>
+          <span class="mob-pv-ref"><bdi dir="ltr">${esc(toArabicDigits(c.ref))}</bdi></span>
+        </div>
+        <button type="button" class="mob-pv-close" id="mobPvClose" aria-label="Close">&times;</button>
+      </div>
+      <div class="mob-pv-pager-bar">
+        <button type="button" class="mob-pv-page-btn" id="mobPvPrev" aria-label="Previous">&rsaquo;</button>
+        <div class="mob-pv-page-info" id="mobPvPageInfo"></div>
+        <button type="button" class="mob-pv-page-btn" id="mobPvNext" aria-label="Next">&lsaquo;</button>
+      </div>
+      <div class="mob-pv-body" id="mobPvBody">
+        <div class="mob-pv-canvas-wrap" id="mobPvCanvasWrap">
+          <div class="mob-pv-paper" id="mobPvPaper"></div>
+        </div>
+      </div>
+      <div class="mob-pv-footer">
+        <button type="button" class="btn sm act-btn-print" id="mobPvBtnPrint">
+          <span>${esc(t('c.print') || 'طباعة')}</span>
+        </button>
+        <button type="button" class="btn sm act-btn-pdf" id="mobPvBtnPdf">
+          <span>${esc(t('ed.exportPdf') || 'حفظ كملف PDF')}</span>
+        </button>
+        <button type="button" class="btn sm act-btn-edit" id="mobPvBtnEdit">
+          <span>${esc(t('c.edit') || 'تعديل')}</span>
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  updateCard();
+
+  $('#mobPvClose', modal).onclick = () => modal.remove();
+  modal.onclick = e => { if (e.target === modal) modal.remove(); };
+
+  $('#mobPvPrev', modal).onclick = () => {
+    if (curPage > 0) { curPage--; updateCard(); }
+  };
+  $('#mobPvNext', modal).onclick = () => {
+    if (curPage < N - 1) { curPage++; updateCard(); }
+  };
+
+  let startX = 0, startY = 0;
+  const bodyEl = $('#mobPvBody', modal);
+  if (bodyEl) {
+    bodyEl.addEventListener('touchstart', e => {
+      if (e.touches.length === 1) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+    bodyEl.addEventListener('touchend', e => {
+      if (e.changedTouches.length === 1) {
+        const dx = e.changedTouches[0].clientX - startX;
+        const dy = e.changedTouches[0].clientY - startY;
+        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+          if (dx < 0 && curPage < N - 1) { curPage++; updateCard(); }
+          else if (dx > 0 && curPage > 0) { curPage--; updateCard(); }
+        }
+      }
+    }, { passive: true });
+  }
+
+  $('#mobPvBtnPrint', modal).onclick = () => {
+    modal.remove();
+    openPrintModal(c);
+  };
+  $('#mobPvBtnPdf', modal).onclick = () => {
+    downloadPdfDirect(c);
+  };
+  $('#mobPvBtnEdit', modal).onclick = () => {
+    modal.remove();
+    location.hash = '#/c/' + c.id;
+  };
+}
+window.openMobilePreviewModal = openMobilePreviewModal;
 window.renderPages = renderPages;
 window.downloadPdfDirect = downloadPdfDirect;
 window.printContractDirect = printContractDirect;
@@ -1811,6 +1946,7 @@ function vContracts() {
         <td class="sub cell-updated">${ago(c.updated)}</td>
         <td class="cell-acts">
           <div class="acts">
+            <button type="button" class="btn sm act-btn-pv" data-pv="${c.id}" title="${esc(t('pv.previewTitle') || 'معاينة')}"><span>${esc(t('pv.previewTitle') || 'معاينة')}</span></button>
             <button type="button" class="btn sm act-btn-edit" data-edit="${c.id}" title="${esc(t('pv.openEditor'))}"><span>${esc(t('c.edit'))}</span></button>
             <button type="button" class="btn sm act-btn-send" data-send="${c.id}" title="${esc(t('c.send'))}"><span>${esc(t('c.send'))}</span></button>
             <button type="button" class="btn sm act-btn-pdf" data-pdf="${c.id}" title="${esc(t('ed.exportPdf'))}"><span>PDF</span></button>
@@ -1995,6 +2131,11 @@ function vContracts() {
       }
       return;
     }
+    const pv = e.target.closest('[data-pv]');
+    if (pv) {
+      openMobilePreviewModal(pv.dataset.pv);
+      return;
+    }
     const edit = e.target.closest('[data-edit]');
     if (edit) {
       F.activeContractId = edit.dataset.edit;
@@ -2057,7 +2198,7 @@ function vContracts() {
         const activeContract = DB.contracts.find(x => x.id === cid);
         renderContractPreview(activeContract);
       } else {
-        location.hash = '#/c/' + cid;
+        openMobilePreviewModal(cid);
       }
     }
   };
@@ -2232,6 +2373,7 @@ function vProjectWorkspace(pid) {
             <td class="sub cell-updated">${ago(c.updated)}</td>
             <td class="cell-acts">
               <div class="acts">
+                <button type="button" class="btn sm act-btn-pv" data-pv="${c.id}" title="${esc(t('pv.previewTitle') || 'معاينة')}"><span>${esc(t('pv.previewTitle') || 'معاينة')}</span></button>
                 <button type="button" class="btn sm act-btn-edit" data-edit="${c.id}" title="${esc(t('pv.openEditor'))}"><span>${esc(t('c.edit'))}</span></button>
                 <button type="button" class="btn sm act-btn-send" data-send="${c.id}" title="${esc(t('c.send'))}"><span>${esc(t('c.send'))}</span></button>
                 <button type="button" class="btn sm act-btn-pdf" data-pdf="${c.id}" title="${esc(t('ed.exportPdf'))}"><span>PDF</span></button>
@@ -2244,6 +2386,11 @@ function vProjectWorkspace(pid) {
     </table>`;
 
     $('#wsContractList').onclick = e => {
+      const pv = e.target.closest('[data-pv]');
+      if (pv) {
+        openMobilePreviewModal(pv.dataset.pv);
+        return;
+      }
       const edit = e.target.closest('[data-edit]');
       if (edit) {
         location.hash = '#/c/' + edit.dataset.edit;
@@ -2293,7 +2440,10 @@ function vProjectWorkspace(pid) {
       }
       if (e.target.closest('select') || e.target.closest('a')) return;
       const row = e.target.closest('[data-id]');
-      if (row) location.hash = '#/c/' + row.dataset.id;
+      if (row) {
+        if (window.innerWidth < 900) openMobilePreviewModal(row.dataset.id);
+        else location.hash = '#/c/' + row.dataset.id;
+      }
     };
 
     $('#wsContractList').onchange = e => {
